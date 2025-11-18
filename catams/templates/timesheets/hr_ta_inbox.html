@@ -1,0 +1,31 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+
+<h3>TA Applications — HR Inbox</h3>
+<table class="table table-hover align-middle">
+  <thead><tr><th>ID</th><th>Applicant</th><th>Unit</th><th>UC Note</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for a in apps %}
+    <tr>
+      <td>{{ a.id }}</td>
+      <td>{{ a.applicant.username }}</td>
+      <td>{{ a.unit.code }} - {{ a.unit.name }}</td>
+      <td>{{ a.uc_note|default:"-" }}</td>
+      <td class="d-flex gap-2">
+        <form method="post" action="/portal/hr/ta/{{a.id}}/approve/">{% csrf_token %}
+          <input type="text" name="hr_note" placeholder="Note (optional)" class="form-control form-control-sm mb-1">
+          <button class="btn btn-sm btn-success">Approve</button>
+        </form>
+        <form method="post" action="/portal/hr/ta/{{a.id}}/reject/">{% csrf_token %}
+          <input type="text" name="hr_note" placeholder="Reason (optional)" class="form-control form-control-sm mb-1">
+          <button class="btn btn-sm btn-outline-danger">Reject</button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">No applications pending.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

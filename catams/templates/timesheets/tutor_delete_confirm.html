@@ -1,0 +1,10 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}Delete Request #{{ ts.id }}{% endblock %}
+{% block content %}
+<h3>Delete Request</h3>
+<div class="alert alert-warning">This will permanently delete request <strong>#{{ ts.id }}</strong> ({{ ts.unit.code }}).</div>
+<form method="post">{% csrf_token %}
+  <a href="{% url 'casual-requests' %}" class="btn btn-outline-secondary">Cancel</a>
+  <button type="submit" class="btn btn-danger">Delete</button>
+</form>
+{% endblock %}

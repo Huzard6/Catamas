@@ -1,0 +1,26 @@
+
+{% extends 'timesheets/base.html' %}
+{% block title %}My Courses{% endblock %}
+{% block content %}
+<h3>My Courses</h3>
+<div class="table-responsive bg-white rounded shadow-sm">
+<table class="table mb-0">
+  <thead><tr><th>Code</th><th>Name</th><th>Dates</th><th>Slots</th><th>Budget</th><th>Active</th><th>Details</th></tr></thead>
+  <tbody>
+  {% for u in units %}
+    <tr>
+      <td>{{u.code}}</td><td>{{u.name}}</td>
+      <td>{{u.start_date}} → {{u.end_date}}</td>
+      
+      <td>{% for s in u.slots.all %}<span class="badge text-bg-info">{{ s.get_weekday_display }} {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}</span> {% empty %}—{% endfor %}</td>
+      
+      
+      <td>AUD {{u.budget_amount}}</td>
+      <td>{{u.active}}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="{% url 'uc-unit-summary' u.id %}">View</a>
+      <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'uc-adjust-hours' u.id %}">Adjust</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="7" class="text-center text-muted">No courses</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

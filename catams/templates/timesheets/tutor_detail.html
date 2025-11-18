@@ -1,0 +1,34 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}Request #{{ ts.id }}{% endblock %}
+{% block content %}
+<h3>Request #{{ ts.id }} — {{ ts.unit.code }} — {{ ts.unit.name }}</h3>
+<p class="text-muted">Status: <strong>{{ ts.status }}</strong></p>
+<div class="card mb-3">
+  <div class="card-body">
+    <p><strong>casual:</strong> {{ ts.casual.username }}</p>
+    <p><strong>Hourly rate:</strong> {{ ts.hourly_rate }}</p>
+    <p><strong>Total pay:</strong> {{ ts.total_pay }}</p>
+    <p><strong>Description:</strong><br>{{ ts.desc|linebreaksbr }}</p>
+  </div>
+</div>
+<div class="mb-3">
+  {% if ts.status == 'DRAFT' or ts.status == 'REJ' %}
+    <a class="btn btn-primary" href="{% url 'casual-edit' ts.id %}">Edit</a>
+    <a class="btn btn-danger" href="{% url 'casual-delete' ts.id %}">Delete</a>
+    <a class="btn btn-success" href="{% url 'casual-requests' %}">Back</a>
+{% elif ts.status == 'FINAL' %} == 'FINAL' %}
+    <a class="btn btn-warning" href="{% url 'casual-resubmit' ts.id %}">Resubmit</a>
+    <a class="btn btn-outline-secondary" href="{% url 'casual-requests' %}">Back</a>
+  {% else %}
+    <a class="btn btn-outline-secondary" href="{% url 'casual-requests' %}">Back</a>
+  {% endif %}
+</div>
+{% endblock %}
+
+
+{% if policy_high %}
+<hr>
+<p><strong>Hourly rate:</strong> {{ policy_high }} (first weekly session), {{ policy_low }} (repeats)</p>
+<p><strong>Total pay:</strong> {{ policy_total }}</p>
+<p class="text-muted">Weeks: {{ policy_weeks }}, Hours/week: {{ policy_hours_per_week }}, Total hours: {{ policy_total_hours }}</p>
+{% endif %}

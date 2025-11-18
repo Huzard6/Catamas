@@ -1,0 +1,52 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">Apply as Casual</div>
+  <div class="card-body">
+    <form method="post" class="vstack gap-3">{% csrf_token %}
+      <div>{{ form.unit.label_tag }} {{ form.unit }}</div>
+      <div>{{ form.note.label_tag }} {{ form.note }}</div>
+      <div>
+        <label class="form-label">Send to</label>
+        {{ form.recipient }}
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <button type="submit" class="btn btn-primary btn-sm px-4">Submit</button>
+        <a class="btn btn-secondary btn-sm px-4" href="/portal/">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function(){
+  function updateRecipientsForUnit(unitId){
+    if(!unitId) return;
+    fetch('/portal/api/unit/' + unitId + '/').then(r=>r.json()).then(data=>{
+      const sel = document.querySelector('select[name="recipient"]');
+      if(!sel) return;
+      sel.innerHTML = '<option value="">---------</option>';
+      if(Array.isArray(data.recipients)){
+        data.recipients.forEach(r=>{
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.label;
+          sel.appendChild(opt);
+        });
+        if(data.uc_id){ sel.value = String(data.uc_id); }
+      }
+    }).catch(console.error);
+  }
+  const unitSel = document.querySelector('select[name="unit"]');
+  if(unitSel){
+    unitSel.addEventListener('change', e=> updateRecipientsForUnit(e.target.value));
+    if(unitSel.value){ updateRecipientsForUnit(unitSel.value); }
+  }
+})();
+</script>
+{% endblock %}

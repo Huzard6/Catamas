@@ -1,0 +1,60 @@
+
+{% extends 'timesheets/base.html' %}
+{% block title %}Requests Created by Me{% endblock %}
+{% block content %}
+<h3 class="mb-3">Requests Created by Me</h3>
+<a class="btn btn-success mb-3" href="{% url 'uc-change-new' %}">New</a>
+<table class="table">
+  <thead><tr><th>ID</th><th>Unit</th><th>Casual</th><!--  --><!--  --><th>Status</th><th></th></tr></thead>
+  <tbody>
+    {% for r in changes %}
+      <tr>
+        <td>#{{ r.id }}</td>
+        <td>{{ r.unit.code }}</td>
+        <td>{{ r.casual.username }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>
+          {% if r.status == 'DRAFT' %}
+            <a class="btn btn-sm btn-primary" href="{% url 'uc-change-send' r.id %}">Send</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'uc-change-delete' r.id %}">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">No requests</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+<script>
+(function(){
+  var form = document.getElementById('chg-form') || document.querySelector('form[action][method="post"]');
+  if (!form) return;
+  var btn  = document.getElementById('btn-send') || form.querySelector('button[type="submit"],input[type="submit"]');
+  if (btn) btn.removeAttribute('disabled');
+  function hasNewSlot(){
+    var sel = form.querySelector('[name="new_slots"]');
+    if (!sel) return true;
+    for (var i=0;i<sel.options.length;i++){ if (sel.options[i].selected) return true; }
+    return false;
+  }
+  function forceSubmit(e){
+    if (!hasNewSlot()){
+      if (e) e.preventDefault();
+      alert('Please select at least one "New slots" item.');
+      return false;
+    }
+    if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+    setTimeout(function(){ form.submit(); }, 0);
+  }
+  form.addEventListener('submit', function(e){
+    if (!hasNewSlot()){
+      e.preventDefault();
+      alert('Please select at least one "New slots" item.');
+    }
+  }, true);
+  if (btn){
+    btn.addEventListener('click', function(e){ forceSubmit(e); }, true);
+  }
+})();
+</script>

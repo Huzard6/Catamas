@@ -1,0 +1,15 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">Apply as Teaching Assistant</div>
+  <div class="card-body">
+    <form method="post" class="vstack gap-3">{% csrf_token %}
+      <div>{{ form.unit.label_tag }} {{ form.unit }}</div>
+      <div>{{ form.note.label_tag }} {{ form.note }}</div>
+      <div class="d-flex gap-2 mt-2"><button type="submit" class="btn btn-primary btn-sm px-4">Submit</button><a class="btn btn-secondary btn-sm px-4" href="/portal/">Cancel</a></div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

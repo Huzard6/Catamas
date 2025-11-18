@@ -1,0 +1,50 @@
+{% extends 'timesheets/base.html' %}
+{% load static %}
+{% block title %}Courses{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Courses</h3>
+  <a class="btn btn-success" href="{% url 'hr-course-new' %}">New Course</a>
+</div>
+
+{% if messages %}
+  <div class="mb-2">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+  </div>
+{% endif %}
+
+<div class="table-responsive bg-white rounded shadow-sm">
+  <table class="table mb-0">
+    <thead>
+      <tr><th>Code</th><th>Name</th><th>Unit Coordinator</th><th>Dates</th><th>Slots</th><th>Active</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for u in units %}
+      <tr>
+        <td>{{ u.code }}</td>
+        <td>{{ u.name }}</td>
+        <td>{{ u.lecturer.username }}</td>
+        <td>{{ u.start_date|date:"M. d, Y" }} → {{ u.end_date|date:"M. d, Y" }}</td>
+        <td>
+          {% for s in u.slots.all %}
+            <span class="badge text-bg-info">{{ s.get_weekday_display }} {{ s.start_time|time:"H:i" }} - {{ s.end_time|time:"H:i" }}</span>
+          {% empty %}—{% endfor %}
+        </td>
+        <td>{{ u.active }}</td>
+        <td> <a href="{% url 'hr-courses' %}?delete={{ u.id }}"
+             class="btn btn-sm btn-outline-danger me-1"
+             onclick="return confirm('Delete this course and ALL related records?');">
+            Delete
+          </a>
+          <a href="{% url 'hr-course-delete' u.id %}" class="btn btn-sm btn-outline-danger d-none">Delete (route)</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted text-center">No courses</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

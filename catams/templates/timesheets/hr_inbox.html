@@ -1,0 +1,26 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}HR Inbox{% endblock %}
+{% block content %}
+<h3>HR Inbox</h3>
+<div class="table-responsive bg-white rounded shadow-sm">
+<table class="table mb-0">
+  <thead><tr><th>ID</th><th>casual</th><th>Unit</th><th>Slots</th><th></th></tr></thead>
+  <tbody>
+    {% for i in items %}
+    <tr>
+      <td>#{{i.id}}</td><td>{{i.casual.username}}</td><td>{{i.unit.code}}</td>
+      <td>{% for s in i.selected_slots.all %}<span class="badge text-bg-secondary">{{ s.slot.get_weekday_display }} {{ s.slot.start_time|time:"H:i" }}–{{ s.slot.end_time|time:"H:i" }}</span> {% endfor %}</td>
+      <td>
+        <a class="btn btn-sm btn-success" href="{% url 'hr-approve' i.id %}">Finalize</a>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'hr-reject' i.id %}">Reject</a>
+      </td>
+    </tr>
+    {% empty %}<tr><td colspan="5" class="text-center text-muted">No pending</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+
+<div class="my-3 p-3 bg-light border rounded">
+  <h5>TA Applications</h5>
+  <a class="btn btn-sm btn-primary" href="/portal/hr/ta-requests/">Open TA Requests Inbox</a>
+</div>
+{% endblock %}

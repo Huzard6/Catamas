@@ -1,0 +1,46 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}Adjust Hours · {{ unit.code }}{% endblock %}
+{% block content %}
+<h3>Adjust Hours — {{ unit.code }} {{ unit.name }}</h3>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" class="row gy-3">
+      {% csrf_token %}
+      <div class="col-md-4">
+        <label class="form-label">{{ form.casual.label }}</label>
+        {{ form.casual }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.rate_value.label }}</label>
+        {{ form.rate_value }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.delta_hours.label }}</label>
+        {{ form.delta_hours }}
+        <div class="form-text">{{ form.delta_hours.help_text }}</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label">{{ form.note.label }}</label>
+        {{ form.note }}
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary" href="{% url 'uc-courses' %}">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+<script id="adjust-hours-auto">
+(function(){
+  var sel = document.querySelector('select[name="casual"]');
+  if(sel){
+    sel.addEventListener('change', function(){
+      var id = this.value;
+      var base = window.location.href.split('?')[0];
+      window.location.href = base + '?casual=' + encodeURIComponent(id);
+    });
+  }
+})();
+</script>

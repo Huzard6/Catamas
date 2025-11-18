@@ -1,0 +1,119 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ title }}</h3>
+
+{% if form.errors %}
+<div class="alert alert-warning">
+  <strong>Please fix the issues below:</strong>
+  {{ form.non_field_errors }}
+  <ul class="mb-0">
+  {% for field in form %}
+    {% for err in field.errors %}<li><strong>{{ field.label }}:</strong> {{ err }}</li>{% endfor %}
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" id="chg-form" novalidate>
+  {% if form.errors %}
+  <div class="alert alert-warning">
+    <strong>Please fix the following issues:</strong>
+    <ul style="margin-bottom:0">
+      {% for field, errs in form.errors.items %}
+        {% for err in errs %}<li>{{ field }} — {{ err }}</li>{% endfor %}
+      {% endfor %}
+      {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+{% csrf_token %}
+  <input type="hidden" name="new_rate" value="50.00"/>
+
+  {{ form.as_p }}
+  <button id="btn-send" type="submit" class="btn btn-primary">Save &amp; Send</button>
+</form>
+
+<script>
+// Tiny guard: require at least one "New slots" selection before submit
+document.getElementById('chg-form').addEventListener('submit', function(e){
+  var sel = document.querySelector('[name="new_slots"]');
+  if (sel && sel.options) {
+    var any = Array.from(sel.options).some(o => o.selected);
+    if (!any) {
+      e.preventDefault();
+      alert('Please select at least one "New slots" item.');
+      sel.focus();
+    }
+  }
+});
+</script>
+{% endblock %}
+
+<script>
+(function(){
+  var form = document.getElementById('chg-form') || document.querySelector('form[action][method="post"]');
+  if (!form) return;
+  var btn  = document.getElementById('btn-send') || form.querySelector('button[type="submit"],input[type="submit"]');
+  if (btn) btn.removeAttribute('disabled');
+  function hasNewSlot(){
+    var sel = form.querySelector('[name="new_slots"]');
+    if (!sel) return true;
+    for (var i=0;i<sel.options.length;i++){ if (sel.options[i].selected) return true; }
+    return false;
+  }
+  function forceSubmit(e){
+    if (!hasNewSlot()){
+      if (e) e.preventDefault();
+      alert('Please select at least one "New slots" item.');
+      return false;
+    }
+    if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+    setTimeout(function(){ form.submit(); }, 0);
+  }
+  form.addEventListener('submit', function(e){
+    if (!hasNewSlot()){
+      e.preventDefault();
+      alert('Please select at least one "New slots" item.');
+    }
+  }, true);
+  if (btn){
+    btn.addEventListener('click', function(e){ forceSubmit(e); }, true);
+  }
+})();
+</script>
+<script>
+// Auto-populate "New slots" select if it's empty by copying options from the other slots list.
+document.addEventListener('DOMContentLoaded', function(){
+  const newSel = document.getElementById('id_new_slots') || document.querySelector('select[name="new_slots"]');
+  if (newSel && newSel.options.length === 0){
+    const fromSel = document.getElementById('id_slots') || document.querySelector('select[name$="slots"]:not([name="new_slots"])');
+    if (fromSel){
+      Array.from(fromSel.options).forEach(function(opt){
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.textContent || opt.label || opt.innerText;
+        newSel.add(o);
+      });
+    }
+  }
+});
+</script>
+
+<script id="SYNC_NEW_SLOTS_ENHANCEMENT">
+document.getElementById('btn-send')?.addEventListener('click', function(){
+  const form   = document.getElementById('chg-form');
+  if (!form) return;
+  const newSel = form.querySelector('select[name="new_slots"]');
+  const fromSel= document.getElementById('id_slots') || form.querySelector('select[name$="slots"]:not([name="new_slots"])');
+  if (newSel && fromSel) {
+    const anySelected = Array.from(newSel.options).some(o => o.selected);
+    if (!anySelected) {
+      const selectedVals = Array.from(fromSel.selectedOptions || []).map(o => o.value);
+      if (selectedVals.length){
+        Array.from(newSel.options).forEach(o => { o.selected = selectedVals.includes(o.value); });
+      }
+    }
+  }
+}, {capture:true});
+</script>

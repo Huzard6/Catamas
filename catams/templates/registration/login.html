@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body{background:#f5f7fb}
+    .card-login{max-width:560px;margin:6rem auto;border-radius:18px;box-shadow:0 10px 24px rgba(27,39,51,.08)}
+    .card-login .card-body{padding:2.25rem 2.25rem}
+    .form-control{height:46px}
+    .demo-note{color:#6b7280}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card card-login">
+      <div class="card-body">
+        <h2 class="text-center mb-4">Sign in</h2>
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <form method="post" action="{% url 'login' %}" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text" name="username" autofocus value="{{ form.username.value|default_if_none:'' }}" class="form-control" id="id_username" required>
+          </div>
+          <div class="mb-3">
+            <label for="id_password" class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" id="id_password" required>
+          </div>
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+        <div class="text-center mt-3 demo-note">
+          <div><strong>Demo accounts</strong> (password: <code>pass1234</code>)</div>
+          <div>HR: <code>hr</code> &nbsp;|&nbsp; UC: <code>uc_1</code>, <code>uc_2</code> &nbsp;|&nbsp; TA: <code>ta_debug</code> &nbsp;|&nbsp; Casual: <code>casual_debug1</code>, <code>casual_debug2</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

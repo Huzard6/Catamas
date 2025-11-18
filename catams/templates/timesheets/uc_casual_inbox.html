@@ -1,0 +1,52 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+
+<h3>Casual Applications — Unit Coordinator Inbox</h3>
+<table class="table table-hover align-middle">
+  <thead><tr><th>ID</th><th>Applicant</th><th>Unit</th><th>TA Note</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for a in apps %}
+    <tr>
+      <td>{{ a.id }}</td>
+      <td>{{ a.applicant.username }}</td>
+      <td>{{ a.unit.code }} - {{ a.unit.name }}</td>
+      <td>{{ a.ta_note|default:"-" }}</td>
+      <td class="d-flex gap-2">
+        <form method="post" action="/portal/unit-coordinator/casual/{{a.id}}/forward/">{% csrf_token %}
+          <input type="text" name="uc_note" placeholder="Recommendation (optional)" class="form-control form-control-sm mb-1">
+          <button class="btn btn-sm btn-primary">Forward to HR</button>
+        </form>
+        <form method="post" action="/portal/unit-coordinator/casual/{{a.id}}/reject/">{% csrf_token %}
+          <input type="text" name="uc_note" placeholder="Reason (optional)" class="form-control form-control-sm mb-1">
+          <button class="btn btn-sm btn-outline-danger">Reject</button>
+        </form>
+<button type="button" class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#taCommentModal-a-{{ a.id }}">
+  View TA Comment
+</button>
+
+<div class="modal fade" id="taCommentModal-a-{{ a.id }}" tabindex="-1" aria-labelledby="taCommentModal-a-{{ a.id }}-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="taCommentModal-a-{{ a.id }}-label">TA Comment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <pre class="mb-0" style="white-space:pre-wrap;word-wrap:break-word;">{{ a.ta_note|default:"No TA comment." }}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">No applications pending.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}Confirm Resubmit{% endblock %}
+{% block content %}
+<h3>Confirm Resubmission</h3>
+<div class="alert alert-info">
+  <p>You are about to <strong>resubmit</strong> this finalized request: <strong>#{{ ts.id }} {{ ts.unit.code }} - {{ ts.unit.name }}</strong>.</p>
+  <ul>
+    <li>The request status will change from <strong>FINAL</strong> to <strong>DRAFT</strong>.</li>
+    <li>All approvals will need to be obtained again (unit coordinator → HR).</li>
+    <li>Hourly rate, description, and selected weekly slots can be edited after resubmission.</li>
+  </ul>
+</div>
+<form method="post">{% csrf_token %}
+  <a href="{% url 'casual-requests' %}" class="btn btn-outline-secondary">Cancel</a>
+  <button type="submit" class="btn btn-primary">Confirm Resubmit</button>
+</form>
+{% endblock %}

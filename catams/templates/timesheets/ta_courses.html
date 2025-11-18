@@ -1,0 +1,32 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+<div class="container my-3">
+  <h2>My TA Courses</h2>
+  <table class="table table-hover align-middle">
+    <thead><tr>
+      <th>Code</th><th>Name</th><th>Dates</th><th>Slots</th><th>Budget</th><th>Active</th><th>Details</th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.u.code }}</td>
+        <td>{{ r.u.name }}</td>
+        <td>{{ r.u.start_date }} → {{ r.u.end_date }}</td>
+        
+        <td>{% for s in r.u.slots.all %}<span class="badge text-bg-info">{{ s.get_weekday_display }} {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}</span> {% empty %}—{% endfor %}</td>
+        
+        
+      <td>AUD {{ r.u.budget_amount }}</td>
+      <td>{{ r.u.active }}</td>
+        <td>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'ta_unit_summary' r.u.id %}">View</a>
+          <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'ta_adjust_hours' r.u.id %}">Adjust</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted">No courses</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

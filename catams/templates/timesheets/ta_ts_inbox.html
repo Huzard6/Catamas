@@ -1,0 +1,45 @@
+{% extends 'timesheets/base.html' %}
+{% block content %}
+<h2>Timesheets — TA Inbox</h2>
+<table class="table table-hover align-middle">
+  <thead>
+    <tr>
+      <th style="width:6%">ID</th>
+      <th style="width:16%">Applicant</th>
+      <th style="width:14%">Unit</th>
+      <th style="width:28%">Slots</th>
+      <th style="width:24%">TA Comment</th>
+      <th style="width:12%">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% if items %}
+    {% for ts in items %}
+      <tr>
+        <td>#{{ ts.id }}</td>
+        <td>{{ ts.tutor.username }}</td>
+        <td>{{ ts.unit.code }}</td>
+        <td>
+          {% for s in ts.slots.all %}
+            <span class="badge bg-light text-dark">{{ s }}</span>
+          {% empty %}
+            <span class="text-muted">No slots</span>
+          {% endfor %}
+        </td>
+        <td colspan="2">
+  <form method="post">{% csrf_token %}
+    <textarea name="ta_comment" rows="2" class="form-control form-control-sm" placeholder="Write a short comment...">{{ ts.ta_comment }}</textarea>
+    <div class="mt-1 d-flex justify-content-end gap-2">
+      <button type="submit" class="btn btn-outline-secondary btn-sm" formaction="{% url 'ta-ts-comment' ts.id %}">Save Comment</button>
+      <button type="submit" class="btn btn-primary btn-sm" formaction="{% url 'ta-ts-forward' ts.id %}">Forward to UC</button>
+    </div>
+  </form>
+</td>
+      </tr>
+    {% endfor %}
+  {% else %}
+    <tr><td colspan="6" class="text-muted">No timesheets pending.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+{% endblock %}

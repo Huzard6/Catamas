@@ -1,0 +1,172 @@
+
+{% extends 'timesheets/base.html' %}
+{% block content %}
+<h2 class="mb-3">New Course</h2>
+
+<form method="post" novalidate class="bg-white p-3 rounded shadow-sm">
+  {% csrf_token %}
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Code:</label>
+      {{ form.code }}
+      {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Name:</label>
+      {{ form.name }}
+      {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Unit Coordinator</label>
+      {% if form.lecturer %}{{ form.lecturer }}{% endif %}
+      {% if form.lecturer and form.lecturer.errors %}<div class="text-danger small">{{ form.lecturer.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      {% if form.budget_amount %}
+        <label class="form-label">Budget amount:</label>
+        {{ form.budget_amount }}
+        {% if form.budget_amount.errors %}<div class="text-danger small">{{ form.budget_amount.errors }}</div>{% endif %}
+      {% elif form.budget %}
+        <label class="form-label">Budget amount:</label>
+        {{ form.budget }}
+        {% if form.budget.errors %}<div class="text-danger small">{{ form.budget.errors }}</div>{% endif %}
+      {% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Start date:</label>
+      {{ form.start_date }}
+      {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">End date:</label>
+      {{ form.end_date }}
+      {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 d-flex align-items-center">
+      <div class="form-check mt-4">
+        {{ form.active }} <label class="form-check-label">Active:</label>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h3 class="mb-3">Weekly slots</h3>
+  {{ slot_formset.management_form }}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th style="width:220px;">Weekday</th>
+          <th style="width:200px;">Start</th>
+          <th style="width:200px;">End</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="slot-rows">
+        {% for sform in slot_formset.forms %}
+          <tr class="slot-row">
+            <td>{{ sform.weekday }}</td>
+            <td>{% if sform.start_time %}{{ sform.start_time }}{% else %}{{ sform.start }}{% endif %}</td>
+            <td>{% if sform.end_time %}{{ sform.end_time }}{% else %}{{ sform.end }}{% endif %}</td>
+            <td>
+              {% if sform.instance.pk %}
+                <label class="form-check form-switch m-0">
+                  {{ sform.DELETE }} <span class="small">Remove</span>
+                </label>
+              {% else %}
+                <button type="button" class="btn btn-outline-danger btn-sm slot-remove">Remove</button>
+              {% endif %}
+              {% if sform.id %}{{ sform.id }}{% endif %}
+            </td>
+          </tr>
+          {% if sform.non_field_errors %}
+            <tr><td colspan="4"><div class="text-danger small">{{ sform.non_field_errors }}</div></td></tr>
+          {% endif %}
+        {% empty %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <button type="button" id="add-slot" class="btn btn-outline-secondary mb-3">Add weekly slot</button>
+
+  <div class="d-flex gap-2 mt-3">
+    <button class="btn btn-primary">Save</button>
+    <a href="{% url 'hr-courses' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+
+  <template id="slot-empty-row">
+    <tr class="slot-row">
+      <td>{{ slot_formset.empty_form.weekday }}</td>
+      <td>{% if slot_formset.empty_form.start_time %}{{ slot_formset.empty_form.start_time }}{% else %}{{ slot_formset.empty_form.start }}{% endif %}</td>
+      <td>{% if slot_formset.empty_form.end_time %}{{ slot_formset.empty_form.end_time }}{% else %}{{ slot_formset.empty_form.end }}{% endif %}</td>
+      <td>
+        <button type="button" class="btn btn-outline-danger btn-sm slot-remove">Remove</button>
+        {% if slot_formset.empty_form.id %}{{ slot_formset.empty_form.id }}{% endif %}
+      </td>
+    </tr>
+  </template>
+
+{# Compatibility hidden input for max hourly rate, to satisfy existing JS that reads id_max_hourly_rate #}
+{% if form.max_hourly_rate %}
+  {{ form.max_hourly_rate.as_hidden }}
+{% else %}
+  <input type="hidden" id="id_max_hourly_rate" name="max_hourly_rate" value="300">
+{% endif %}
+
+</form>
+
+<script>
+(function() {
+  const tbody = document.getElementById('slot-rows');
+  const addBtn = document.getElementById('add-slot');
+  const tmpl = document.getElementById('slot-empty-row');
+  const totalInput = document.querySelector('input[name$="-TOTAL_FORMS"], input[name$="TOTAL_FORMS"]');
+
+  function addRow() {
+    if (!tmpl || !totalInput) return;
+    const idx = parseInt(totalInput.value || '0', 10);
+    const html = tmpl.innerHTML.replace(/__prefix__/g, String(idx)).trim();
+    // Important: insertAdjacentHTML preserves table structure for <tr>
+    tbody.insertAdjacentHTML('beforeend', html);
+    totalInput.value = String(idx + 1);
+  }
+
+  function removeRow(btn) {
+    const tr = btn.closest('tr.slot-row');
+    if (!tr) return;
+    // If has existing id (hidden) and DELETE checkbox (existing instance path in server-render), try to check it
+    const delInput = tr.querySelector('input[name$="-DELETE"]');
+    const idInput = tr.querySelector('input[name$="-id"]');
+    if (delInput && idInput && idInput.value) {
+      delInput.checked = true;
+      tr.style.display = 'none';
+      return;
+    }
+    // purely client-side row -> remove and decrement
+    tr.remove();
+    if (totalInput) {
+      const n = Math.max(0, parseInt(totalInput.value || '0', 10) - 1);
+      totalInput.value = String(n);
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    const t = e.target;
+    if (t.closest('#add-slot')) {
+      e.preventDefault();
+      addRow();
+    } else if (t.classList.contains('slot-remove')) {
+      e.preventDefault();
+      removeRow(t);
+    }
+  });
+
+  try {
+    if (totalInput && parseInt(totalInput.value || '0', 10) === 0) addRow();
+  } catch(e) {}
+})();
+</script>
+{% endblock %}

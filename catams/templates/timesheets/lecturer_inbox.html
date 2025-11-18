@@ -1,0 +1,47 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}unit coordinator Inbox{% endblock %}
+{% block content %}
+<h3>unit coordinator Inbox</h3>
+<div class="table-responsive bg-white rounded shadow-sm">
+<table class="table mb-0">
+  <thead><tr><th>ID</th><th>casual</th><th>Unit</th><th>Slots</th><th></th></tr></thead>
+  <tbody>
+    {% for i in items %}
+    <tr>
+      <td>#{{i.id}}</td><td>{{i.casual.username}}</td><td>{{i.unit.code}}</td>
+      <td>{% for s in i.selected_slots.all %}<span class="badge text-bg-secondary">{{ s.slot.get_weekday_display }} {{ s.slot.start_time|time:"H:i" }}–{{ s.slot.end_time|time:"H:i" }}</span> {% endfor %}</td>
+      <td>
+        <a class="btn btn-sm btn-success" href="{% url 'lecturer-approve' i.id %}">Approve</a>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'lecturer-reject' i.id %}">Reject</a>
+<button type="button" class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#taCommentModal-i-{{ i.id }}">
+  View TA Comment
+</button>
+
+<div class="modal fade" id="taCommentModal-i-{{ i.id }}" tabindex="-1" aria-labelledby="taCommentModalLabel-i-{{ i.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="taCommentModalLabel-i-{{ i.id }}">TA Comment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <pre class="mb-0" style="white-space:pre-wrap;word-wrap:break-word;">{% firstof i.ta_comment i.ta_note "No TA comment." %}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+      </td>
+    </tr>
+    {% empty %}<tr><td colspan="5" class="text-center text-muted">No pending</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+
+<div class="my-3 p-3 bg-light border rounded">
+  <h5>TA Applications</h5>
+  <a class="btn btn-sm btn-primary" href="/portal/unit-coordinator/ta-requests/">Open TA Requests Inbox</a>
+</div>
+{% endblock %}

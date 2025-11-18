@@ -1,0 +1,279 @@
+{% extends 'timesheets/base.html' %}
+{% block title %}Edit Request #{{ ts.id }}
+<script>
+(function(){
+  function compute(){
+    const rateEl = document.querySelector('input[name="hourly_rate"]');
+    const rate = rateEl ? parseFloat(rateEl.value||'0') : 0;
+    const checked = Array.from(document.querySelectorAll('#slot-box input[type="checkbox"]:checked'));
+    let hoursPerWeek = 0;
+    checked.forEach(c=>{ hoursPerWeek += parseFloat(c.dataset.duration||'0'); });
+    const dates = document.getElementById('unit-dates')?.textContent || '';
+    const m = dates.match(/(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})/);
+    let weeks = 0;
+    if(m){
+      const start = new Date(m[1]); const end = new Date(m[2]);
+      const ms = 24*60*60*1000; const days = Math.floor((end-start)/ms);
+      if(days >= 0) weeks = Math.floor(days/7)+1;
+    }
+    const totalHours = hoursPerWeek * (weeks || 0);
+    const total = rate * totalHours;
+    const box = document.getElementById('wage-summary');
+    if(box){ box.textContent = `Weeks: ${weeks}, Hours/week: ${hoursPerWeek.toFixed(2)}, Total hours: ${totalHours.toFixed(2)}, Total: AUD ${total.toFixed(2)}`; }
+  }
+
+  function rebuildSlots(slots){
+    const box = document.getElementById('slot-box');
+    if(!box) return;
+    if(!Array.isArray(slots) || !slots.length){
+      box.innerHTML = '<span class="text-muted">No slots under this course.</span>';
+      return;
+    }
+    box.innerHTML = '';
+    slots.forEach(s=>{
+      const id = 'slot_' + s.id;
+      const div = document.createElement('div');
+      div.className = 'form-check form-check-inline';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = 'slots';
+      input.value = s.id;
+      input.id = id;
+      input.className = 'form-check-input';
+      input.dataset.duration = (s.duration_hours || s.duration || 0);
+      const label = document.createElement('label');
+      label.setAttribute('for', id);
+      label.className = 'form-check-label';
+      label.textContent = s.label || ('#'+s.id);
+      div.appendChild(input); div.appendChild(label);
+      box.appendChild(div);
+    });
+    // preselect previous slots from PRESELECTED
+    try{
+      (window.PRESELECTED || []).forEach(function(id){
+        const el = document.getElementById('slot_'+id);
+        if(el){ el.checked = true; }
+      });
+    }catch(e){}
+    compute();
+  }
+
+  function refreshRecipients(data){
+    const recSel = document.querySelector('select[name="recipient"]');
+    if(!recSel) return;
+    recSel.innerHTML = '<option value="">---------</option>';
+    if(Array.isArray(data.recipients)){
+      data.recipients.forEach(function(r){
+        const opt = document.createElement('option');
+        opt.value = String(r.id);
+        opt.textContent = r.label || r.name || r.username || r.email || ('#'+r.id);
+        recSel.appendChild(opt);
+      });
+    }
+    // prefer current request's recipient, then UC
+    var preset = null;
+    try { preset = String({{ ts.recipient_id|default_if_none:"" }}); } catch(e) {}
+    if(preset && recSel.querySelector('option[value="'+preset+'"]')){
+      recSel.value = preset;
+    }else if(data.uc_id){
+      recSel.value = String(data.uc_id);
+    }
+  }
+
+  function updateMeta(data){
+    const dates = document.getElementById('unit-dates');
+    if(dates){ dates.textContent = (data.start_date && data.end_date) ? ('Course dates: ' + data.start_date + ' → ' + data.end_date) : ''; }
+    const rateMax = document.getElementById('rate-max');
+    if(rateMax){ rateMax.textContent = data.max_hourly_rate ? ('(max ' + data.max_hourly_rate + ')') : ''; }
+  }
+
+  function updateForUnit(unitId){
+    if(!unitId) return;
+    fetch('/portal/api/unit/' + unitId + '/')
+      .then(r=>r.json())
+      .then(data=>{ updateMeta(data); rebuildSlots(data.slots||[]); refreshRecipients(data); })
+      .catch(console.error);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const unitSel = document.querySelector('select[name="unit"]');
+    if(unitSel){
+      // initial load
+      if(unitSel.value){ updateForUnit(unitSel.value); }
+      // refresh on change
+      unitSel.addEventListener('change', function(e){
+        updateForUnit(e.target.value);
+      });
+    }
+    const rateEl = document.querySelector('input[name="hourly_rate"]');
+    if(rateEl){ rateEl.addEventListener('input', compute); }
+    document.getElementById('slot-box')?.addEventListener('change', compute);
+  });
+})();
+</script>
+
+{% endblock %}
+{% block content %}
+<h3>Edit Request #{{ ts.id }}</h3>
+<form method="post" class="bg-white p-3 rounded shadow-sm">
+  {% csrf_token %}
+  <script>const PRESELECTED=[{% for s in ts.selected_slots.all %}{{ s.slot_id }}{% if not forloop.last %},{% endif %}{% endfor %}];</script>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Course</label>
+      {{ form.unit }}
+    </div>
+    <div class="col-md-4 align-self-end">
+      <div id="unit-dates" class="text-muted small"></div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Send to</label>
+      {{ form.recipient }}
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Description</label>
+      <div>{{ form.desc }}</div>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Weekly slots (from HR)</label>
+      <div id="slot-box">
+        {% for f in form.slots %}
+          <div class="form-check form-check-inline">
+            {{ f.tag }} <label class="form-check-label">{{ f.choice_label }}</label>
+          </div>
+        {% empty %}
+          <span class="text-muted">No slots under this course.</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-md-6 mt-2">
+      <label class="form-label">Hourly rate (AUD)</label>
+      {{ form.hourly_rate }} <small id="rate-max" class="text-muted"></small>
+    </div>
+    <div class="col-md-6 mt-4">
+      <div id="wage-summary" class="text-muted small"></div>
+    </div>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary">Save</button>
+  </div>
+<div class="alert alert-info mt-2">
+  Selecting overlapping weekly slots on the same day is not allowed.
+  If a selected slot overlaps with <strong>your other active requests</strong> (Draft / To unit coordinator / To HR / Finalized),
+  submission will be blocked and all conflicts will be listed below the Slots field.
+</div>
+</form>
+
+<script>
+(function(){
+  function compute(){
+    const rateEl = document.querySelector('input[name="hourly_rate"]');
+    const rate = rateEl ? parseFloat(rateEl.value||'0') : 0;
+    const checked = Array.from(document.querySelectorAll('#slot-box input[type="checkbox"]:checked'));
+    let hoursPerWeek = 0;
+    checked.forEach(c=>{ hoursPerWeek += parseFloat(c.dataset.duration||'0'); });
+    const dates = document.getElementById('unit-dates')?.textContent || '';
+    const m = dates.match(/(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})/);
+    let weeks = 0;
+    if(m){
+      const start = new Date(m[1]); const end = new Date(m[2]);
+      const ms = 24*60*60*1000; const days = Math.floor((end-start)/ms);
+      if(days >= 0) weeks = Math.floor(days/7)+1;
+    }
+    const totalHours = hoursPerWeek * (weeks || 0);
+    const total = rate * totalHours;
+    const box = document.getElementById('wage-summary');
+    if(box){ box.textContent = `Weeks: ${weeks}, Hours/week: ${hoursPerWeek.toFixed(2)}, Total hours: ${totalHours.toFixed(2)}, Total: AUD ${total.toFixed(2)}`; }
+  }
+
+  function rebuildSlots(slots){
+    const box = document.getElementById('slot-box');
+    if(!box) return;
+    if(!Array.isArray(slots) || !slots.length){
+      box.innerHTML = '<span class="text-muted">No slots under this course.</span>';
+      return;
+    }
+    box.innerHTML = '';
+    slots.forEach(s=>{
+      const id = 'slot_' + s.id;
+      const div = document.createElement('div');
+      div.className = 'form-check form-check-inline';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = 'slots';
+      input.value = s.id;
+      input.id = id;
+      input.className = 'form-check-input';
+      input.dataset.duration = (s.duration_hours || s.duration || 0);
+      const label = document.createElement('label');
+      label.setAttribute('for', id);
+      label.className = 'form-check-label';
+      label.textContent = s.label || ('#'+s.id);
+      div.appendChild(input); div.appendChild(label);
+      box.appendChild(div);
+    });
+    // preselect previous slots from PRESELECTED
+    try{
+      (window.PRESELECTED || []).forEach(function(id){
+        const el = document.getElementById('slot_'+id);
+        if(el){ el.checked = true; }
+      });
+    }catch(e){}
+    compute();
+  }
+
+  function refreshRecipients(data){
+    const recSel = document.querySelector('select[name="recipient"]');
+    if(!recSel) return;
+    recSel.innerHTML = '<option value="">---------</option>';
+    if(Array.isArray(data.recipients)){
+      data.recipients.forEach(function(r){
+        const opt = document.createElement('option');
+        opt.value = String(r.id);
+        opt.textContent = r.label || r.name || r.username || r.email || ('#'+r.id);
+        recSel.appendChild(opt);
+      });
+    }
+    // prefer current request's recipient, then UC
+    var preset = null;
+    try { preset = String({{ ts.recipient_id|default_if_none:"" }}); } catch(e) {}
+    if(preset && recSel.querySelector('option[value="'+preset+'"]')){
+      recSel.value = preset;
+    }else if(data.uc_id){
+      recSel.value = String(data.uc_id);
+    }
+  }
+
+  function updateMeta(data){
+    const dates = document.getElementById('unit-dates');
+    if(dates){ dates.textContent = (data.start_date && data.end_date) ? ('Course dates: ' + data.start_date + ' → ' + data.end_date) : ''; }
+    const rateMax = document.getElementById('rate-max');
+    if(rateMax){ rateMax.textContent = data.max_hourly_rate ? ('(max ' + data.max_hourly_rate + ')') : ''; }
+  }
+
+  function updateForUnit(unitId){
+    if(!unitId) return;
+    fetch('/portal/api/unit/' + unitId + '/')
+      .then(r=>r.json())
+      .then(data=>{ updateMeta(data); rebuildSlots(data.slots||[]); refreshRecipients(data); })
+      .catch(console.error);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const unitSel = document.querySelector('select[name="unit"]');
+    if(unitSel){
+      // initial load
+      if(unitSel.value){ updateForUnit(unitSel.value); }
+      // refresh on change
+      unitSel.addEventListener('change', function(e){
+        updateForUnit(e.target.value);
+      });
+    }
+    const rateEl = document.querySelector('input[name="hourly_rate"]');
+    if(rateEl){ rateEl.addEventListener('input', compute); }
+    document.getElementById('slot-box')?.addEventListener('change', compute);
+  });
+})();
+</script>
+
+{% endblock %}
