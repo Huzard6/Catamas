@@ -1,0 +1,41 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>My Profile</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; max-width: 720px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .row { display: flex; gap: 16px; align-items: center; margin: 10px 0; }
+    .badge { padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-weight: 600; font-size: 12px; }
+    .muted { color: #6b7280; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    .kv { display: grid; grid-template-columns: 160px 1fr; gap: 8px 16px; margin-top: 12px; }
+    .kv div.key { color: #6b7280; }
+    a.btn { display:inline-block; margin-top:16px; padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; text-decoration:none; color:#111827; }
+    .good { background:#ecfdf5; color:#065f46; }
+    .warn { background:#fff7ed; color:#9a3412; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>My Profile</h1>
+    <div class="row">
+      <div style="font-weight:700;">{{ full_name }}</div>
+      {% if is_phd %}
+        <span class="badge">PhD</span>
+      {% else %}
+        <span class="badge muted">Non‑PhD</span>
+      {% endif %}
+    </div>
+    <div class="kv">
+      <div class="key">Username</div><div>{{ user_obj.username }}</div>
+      <div class="key">Email</div><div>{{ email|default:"—" }}</div>
+      <div class="key">Roles</div><div>{% for r in roles %}<span class="badge" style="background:#f1f5f9;color:#0f172a;margin-right:6px;">{{ r }}</span>{% empty %}—{% endfor %}</div>
+      <div class="key">PhD</div><div>{% if is_phd %}<span class="good badge">Yes (PhD)</span>{% else %}<span class="warn badge">No</span>{% endif %}</div>
+    </div>
+    <a class="btn" href="/portal/">← Back to Portal</a>
+  </div>
+</body>
+</html>
