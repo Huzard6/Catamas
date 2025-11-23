@@ -1533,20 +1533,20 @@ def hr_create_account(request):
 def hr_accounts(request):
     """Show UC, TA, CASUAL users side-by-side for HR."""
     from django.contrib.auth.models import User, Group
-    # Normalize aliases
+
+    # Helper to collect members from any alias group names (case-insensitive),
+    # without assuming there is only a single matching Group.
     def members(names):
         qs = User.objects.none()
         for n in names:
-            try:
-                g = Group.objects.get(name__iexact=n)
-                qs = qs | g.user_set.all()
-            except Group.DoesNotExist:
-                continue
+            # Use filter + union instead of get() so we don't crash if we
+            # have both "CASUAL" and "casual" (or other aliases) present.
+            qs = qs | User.objects.filter(groups__name__iexact=n)
         return qs.order_by('username').distinct()
 
-    ucs = members(['UC','unit coordinator'])
-    tas = members(['TA','teaching assistant'])
-    casuals = members(['CASUAL','casual']).exclude(username__in=['casual_user','tutor1'])
+    ucs = members(['UC', 'unit coordinator'])
+    tas = members(['TA', 'teaching assistant'])
+    casuals = members(['CASUAL', 'casual']).exclude(username__in=['casual_user', 'tutor1'])
 
     ctx = base_ctx(request)
     ctx.update({'ucs': ucs, 'tas': tas, 'casuals': casuals})
